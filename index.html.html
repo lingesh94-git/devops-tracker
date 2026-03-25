@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DevOps Routine Tracker</title>
+<style>
+:root{
+  --bg:#f5f4f0;--card:#fff;--card2:#f0ede6;--border:rgba(0,0,0,0.09);
+  --border2:rgba(0,0,0,0.16);--t1:#1a1a18;--t2:#5f5e5a;--t3:#9a9890;
+  --navy:#0c447c;--navy-l:#e6f1fb;--green:#27500a;--green-l:#eaf3de;
+  --green-m:#97c459;--amber:#633806;--amber-l:#faeeda;--amber-m:#ef9f27;
+  --purple:#3c3489;--purple-l:#eeedfe;--red-l:#fcebeb;--red:#791f1f;
+  --r:10px;--rl:14px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#161614;--card:#202020;--card2:#272725;--border:rgba(255,255,255,0.08);
+    --border2:rgba(255,255,255,0.15);--t1:#e4e2db;--t2:#9a9890;--t3:#5e5d58;
+    --navy-l:#042c53;--green-l:#173404;--amber-l:#412402;--purple-l:#26215c;
+    --red-l:#501313;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;padding-bottom:2rem}
+
+/* HEADER */
+.hdr{background:#1a1a18;padding:1rem 1.25rem 0.75rem;position:sticky;top:0;z-index:100}
+.hdr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.hdr-title{font-size:15px;font-weight:600;color:#fff;line-height:1.3}
+.hdr-sub{font-size:11px;color:#888;margin-top:2px}
+.hdr-meta{text-align:right;flex-shrink:0}
+.hdr-date{font-size:11px;color:#aaa}
+.hdr-journey{font-size:11px;color:var(--amber-m);font-weight:500;margin-top:2px}
+
+/* SCORE BAR */
+.score-wrap{background:#111;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px}
+.score-num{font-size:22px;font-weight:700;color:#fff;min-width:52px}
+.score-bar-wrap{flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden}
+.score-bar{height:100%;border-radius:4px;transition:width .4s cubic-bezier(.4,0,.2,1);background:linear-gradient(90deg,#378add,#97c459)}
+.score-right{text-align:right;flex-shrink:0}
+.streak-label{font-size:10px;color:#888;margin-bottom:2px}
+.streak-val{font-size:16px;font-weight:700;color:var(--amber-m)}
+
+/* SYNC STATUS */
+.sync-bar{display:flex;align-items:center;gap:6px;padding:6px 1.25rem;background:#1a1a18;border-top:0.5px solid rgba(255,255,255,0.06)}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#97c459;flex-shrink:0}
+.sync-dot.syncing{background:var(--amber-m);animation:pulse .8s infinite}
+.sync-dot.error{background:#e24b4a}
+.sync-txt{font-size:11px;color:#888}
+
+/* DAY TYPE BANNER */
+.day-banner{margin:1rem 1rem 0.5rem;padding:8px 14px;border-radius:var(--r);font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px}
+.day-banner.weekday{background:var(--navy-l);color:var(--navy)}
+.day-banner.sunday{background:var(--purple-l);color:var(--purple)}
+.day-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* SECTIONS */
+.section{margin:0 1rem 0.75rem}
+.sec-head{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;padding:0 2px;margin-bottom:6px;margin-top:14px}
+
+/* CHECKLIST ITEMS */
+.item{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border-radius:var(--r);border:0.5px solid var(--border);margin-bottom:5px;cursor:pointer;background:var(--card);transition:background .12s,border-color .12s;user-select:none;-webkit-user-select:none}
+.item:active{transform:scale(0.985)}
+.item.done{background:var(--green-l);border-color:rgba(151,196,89,0.4)}
+.item.done .item-title{color:var(--green);text-decoration:line-through;text-decoration-color:rgba(39,80,10,0.4)}
+.item.done .item-time{color:var(--green);opacity:.6}
+.item.done .item-note{color:var(--green);opacity:.65}
+.cb{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border2);background:var(--card);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s}
+.item.done .cb{background:var(--green-m);border-color:var(--green-m)}
+.cb-icon{display:none;width:12px;height:12px}
+.item.done .cb-icon{display:block}
+.item-body{flex:1;min-width:0}
+.item-row{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.item-title{font-size:13px;line-height:1.4;font-weight:400;color:var(--t1)}
+.item-time{font-size:10px;color:var(--t3);white-space:nowrap;flex-shrink:0}
+.item-note{font-size:11px;color:var(--t2);margin-top:3px;line-height:1.45}
+.tag{display:inline-block;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:5px;vertical-align:middle;letter-spacing:.02em}
+.t-h{background:var(--green-l);color:var(--green)}
+.t-s{background:var(--navy-l);color:var(--navy)}
+.t-l{background:var(--purple-l);color:var(--purple)}
+.t-r{background:var(--card2);color:var(--t2)}
+.t-x{background:var(--amber-l);color:var(--amber)}
+
+/* SETUP SCREEN */
+.setup{max-width:500px;margin:2rem auto;padding:0 1rem}
+.setup-card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--rl);padding:1.5rem}
+.setup-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.setup-sub{font-size:12px;color:var(--t2);margin-bottom:1.25rem;line-height:1.6}
+.setup-label{font-size:12px;font-weight:500;color:var(--t1);margin-bottom:5px;margin-top:12px}
+.setup-input{width:100%;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--card);color:var(--t1);font-size:12px;font-family:inherit;padding:9px 11px;line-height:1.5}
+.setup-input:focus{outline:none;border-color:#378add}
+.setup-btn{width:100%;margin-top:1rem;padding:11px;background:#1a1a18;color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+.setup-btn:active{opacity:.85}
+.setup-note{font-size:11px;color:var(--t3);margin-top:10px;line-height:1.6}
+.setup-step{font-size:12px;color:var(--t2);line-height:1.8;margin-bottom:1rem}
+.setup-step b{color:var(--t1);font-weight:500}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a18;color:#fff;font-size:12px;padding:9px 18px;border-radius:20px;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.wrap{max-width:540px;margin:0 auto}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" class="setup" style="display:none">
+  <div class="setup-card">
+    <div class="setup-title">One-time Google Sheets setup</div>
+    <div class="setup-sub">Follow these steps once. After this, every tick you make saves permanently to your Google Sheet — accessible from any device.</div>
+
+    <div class="setup-step">
+      <b>Step 1.</b> Go to <b>sheets.google.com</b> → create a new sheet → name it <b>DevOps Routine Tracker</b><br>
+      <b>Step 2.</b> Copy the Sheet ID from the URL (the long string between /d/ and /edit)<br>
+      <b>Step 3.</b> Go to <b>console.cloud.google.com</b> → New Project → name it anything<br>
+      <b>Step 4.</b> Enable <b>Google Sheets API</b> for that project<br>
+      <b>Step 5.</b> Go to IAM &amp; Admin → Service Accounts → Create Service Account<br>
+      <b>Step 6.</b> Create a JSON key → download it → open it → copy the full contents<br>
+      <b>Step 7.</b> In your Google Sheet → Share → paste the <b>client_email</b> from the JSON → give Editor access
+    </div>
+
+    <div class="setup-label">Google Sheet ID</div>
+    <input class="setup-input" id="inp-sheet" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" />
+
+    <div class="setup-label">Service Account Email (client_email from JSON)</div>
+    <input class="setup-input" id="inp-email" placeholder="e.g. tracker@myproject.iam.gserviceaccount.com" />
+
+    <div class="setup-label">Private Key (private_key from JSON — paste the full key including BEGIN/END lines)</div>
+    <textarea class="setup-input" id="inp-key" rows="5" placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"></textarea>
+
+    <button class="setup-btn" onclick="saveConfig()">Save & Start Tracking</button>
+    <div class="setup-note">This info is stored only in this HTML file on your device. Nobody else can access it unless they have this file. Your other Google Drive files are completely safe — this service account only has access to the one sheet you shared with it.</div>
+  </div>
+</div>
+
+<!-- MAIN TRACKER -->
+<div id="main-screen" style="display:none">
+  <div class="wrap">
+    <div class="hdr">
+      <div class="hdr-top">
+        <div>
+          <div class="hdr-title">DevOps Routine Tracker</div>
+          <div class="hdr-sub">₹60k target · Jan–Mar 2027</div>
+        </div>
+        <div class="hdr-meta">
+          <div class="hdr-date" id="hdr-date"></div>
+          <div class="hdr-journey" id="hdr-journey"></div>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <div class="score-num" id="score-num">0 / 0</div>
+        <div class="score-bar-wrap"><div class="score-bar" id="score-bar" style="width:0%"></div></div>
+        <div class="score-right">
+          <div class="streak-label">Day streak</div>
+          <div class="streak-val" id="streak-val">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="sync-bar">
+      <div class="sync-dot" id="sync-dot"></div>
+      <div class="sync-txt" id="sync-txt">Ready</div>
+    </div>
+
+    <div id="routine-wrap"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG (filled after setup) ────────────────────────────────────────────
+var CFG = {};
+var START_DATE = new Date('2026-03-24'); // Week 1 start
+
+// ─── ROUTINES ────────────────────────────────────────────────────────────────
+var WEEKDAY = [
+  {sec:'Morning', items:[
+    {id:'w01', title:'Wake up',                     time:'5:30 am',    tag:'h', note:'Alarm. No snooze. Drink water immediately.'},
+    {id:'w02', title:'Get ready — bag packed last night', time:'5:30–6:00', tag:'h', note:'Zero friction. Bag already packed. Just grab and go.'},
+    {id:'w03', title:'Boxing gym',                  time:'6:00–7:30',  tag:'h', note:'90 min. Non-negotiable. Sets energy for entire day.'},
+    {id:'w04', title:'Shower + proper breakfast',   time:'7:30–8:30',  tag:'h', note:'Real meal. No skipping.'},
+  ]},
+  {sec:'Work', items:[
+    {id:'w05', title:'Work — full focus',           time:'9:00–6:00',  tag:'l', note:'Don\'t burn bridges. You need this job until DevOps offer arrives.'},
+    {id:'w06', title:'Proper lunch break',          time:'1:00–2:00',  tag:'r', note:'Step away from screen. Brain needs this for evening.'},
+  ]},
+  {sec:'Evening — Study Session', items:[
+    {id:'w07', title:'Home + decompress',           time:'6:30–7:00',  tag:'r', note:'Eat dinner. No phone scroll. Warm-up — not wasted time.'},
+    {id:'w08', title:'Open Scalar — hit play',      time:'7:00 sharp', tag:'s', note:'No decisions. Class already decided. Open → find video → play.'},
+    {id:'w09', title:'Watch recorded class at 1.5×',time:'7:00–8:30',  tag:'s', note:'Pause only to run commands in terminal. Max 5 bullet notes.'},
+    {id:'w10', title:'Do exactly 1 assignment problem', time:'8:30–9:30', tag:'s', note:'Stuck after 20 min? Screenshot → Scalar support → move on.'},
+    {id:'w11', title:'Write study log — 3 lines',   time:'9:30–9:45',  tag:'s', note:'What class. What you built. What confused you.'},
+    {id:'w12', title:'Pack gym bag for tomorrow',   time:'9:45–10:00', tag:'h', note:'Do tonight. 5:30am self has zero willpower — remove friction.'},
+    {id:'w13', title:'Sleep',                       time:'10:30 pm',   tag:'h', note:'Non-negotiable. Less than 7 hrs wrecks boxing and focus both.'},
+  ]},
+];
+
+var SUNDAY = [
+  {sec:'Morning — gentle start', items:[
+    {id:'s01', title:'Wake up naturally — no alarm', time:'7:00–8:00', tag:'r', note:'Your one proper sleep-in. Let body decide.'},
+    {id:'s02', title:'Slow breakfast + tea/coffee',  time:'8:00–9:00', tag:'r', note:'No rushing. Warm-up before the study session.'},
+    {id:'s03', title:'Short walk or stretch',        time:'9:00–9:20', tag:'h', note:'No boxing. Light movement before 3 hours of sitting.'},
+  ]},
+  {sec:'Study Block — 3hr Hard Cap', items:[
+    {id:'s04', title:'Review study log — find unclear concept', time:'9:30–9:45',  tag:'s', note:'Read weekday notes. Find the one unclear thing. That\'s your focus.'},
+    {id:'s05', title:'Clear remaining assignment problems',     time:'9:45–11:00', tag:'s', note:'Finish all problems from this week\'s classes. One by one.'},
+    {id:'s06', title:'Hands-on build session',                  time:'11:00–12:00',tag:'s', note:'Build from memory. Docker: Dockerfile. K8s: deploy, break, fix.'},
+    {id:'s07', title:'Rewatch only the unclear section',        time:'12:00–12:30',tag:'s', note:'Find the timestamp. Watch just that segment — not full class.'},
+    {id:'s08', title:'HARD STOP — close laptop',                time:'12:30 pm',   tag:'x', note:'3 hrs is your burnout limit. More is NOT better today.'},
+  ]},
+];
+
+var TAG_MAP = {h:'health',s:'study',l:'life',r:'rest',x:'stop'};
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+var todayKey = '';
+var ticks = {};   // {itemId: 0|1}
+var streak = 0;
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+function todayStr(){
+  var d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function isSunday(){ return new Date().getDay() === 0; }
+function daysSinceStart(){
+  var now = new Date(); now.setHours(0,0,0,0);
+  var s = new Date(START_DATE); s.setHours(0,0,0,0);
+  return Math.max(0, Math.round((now-s)/(1000*60*60*24)));
+}
+function weekNum(){
+  return Math.floor(daysSinceStart()/7)+1;
+}
+function fmtDate(d){
+  var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return days[d.getDay()]+', '+d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
+}
+function currentItems(){
+  var list=[];
+  var src = isSunday() ? SUNDAY : WEEKDAY;
+  src.forEach(function(sec){ sec.items.forEach(function(it){ list.push(it); }); });
+  return list;
+}
+function totalItems(){ return currentItems().length; }
+function doneCount(){ return Object.values(ticks).filter(function(v){ return v===1; }).length; }
+
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); },2000);
+}
+function setSyncStatus(state, msg){
+  var dot=document.getElementById('sync-dot');
+  var txt=document.getElementById('sync-txt');
+  dot.className='sync-dot'+(state==='syncing'?' syncing':state==='error'?' error':'');
+  txt.textContent=msg;
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────────────────
+function render(){
+  var now = new Date();
+  document.getElementById('hdr-date').textContent = fmtDate(now);
+  document.getElementById('hdr-journey').textContent = 'Week '+weekNum()+' of 22 · Day '+daysSinceStart();
+
+  var done = doneCount(), total = totalItems();
+  var pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('score-num').textContent = done+' / '+total+' done';
+  document.getElementById('score-bar').style.width = pct+'%';
+  document.getElementById('streak-val').textContent = streak > 0 ? streak+' days' : '—';
+
+  var wrap = document.getElementById('routine-wrap');
+  wrap.innerHTML = '';
+
+  // Day banner
+  var banner = document.createElement('div');
+  banner.className = 'day-banner '+(isSunday()?'sunday':'weekday');
+  var dot = document.createElement('div');
+  dot.className = 'day-dot';
+  dot.style.background = isSunday() ? '#7f77dd' : '#378add';
+  banner.appendChild(dot);
+  banner.appendChild(document.createTextNode(isSunday() ? 'Sunday — Study + Rest' : 'Weekday — Work + Study'));
+  wrap.appendChild(banner);
+
+  var src = isSunday() ? SUNDAY : WEEKDAY;
+  src.forEach(function(sec){
+    var secEl = document.createElement('div');
+    secEl.className = 'section';
+    var secHead = document.createElement('div');
+    secHead.className = 'sec-head';
+    secHead.textContent = sec.sec;
+    secEl.appendChild(secHead);
+
+    sec.items.forEach(function(it){
+      var div = document.createElement('div');
+      div.className = 'item'+(ticks[it.id]===1?' done':'');
+      div.onclick = function(){ toggleItem(it.id); };
+
+      div.innerHTML =
+        '<div class="cb"><svg class="cb-icon" viewBox="0 0 12 12" fill="none"><polyline points="1.5,6 5,9.5 10.5,2.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+        +'<div class="item-body">'
+          +'<div class="item-row">'
+            +'<span class="item-title">'+it.title+'<span class="tag t-'+it.tag+'">'+TAG_MAP[it.tag]+'</span></span>'
+            +'<span class="item-time">'+it.time+'</span>'
+          +'</div>'
+          +'<div class="item-note">'+it.note+'</div>'
+        +'</div>';
+      secEl.appendChild(div);
+    });
+    wrap.appendChild(secEl);
+  });
+}
+
+// ─── TOGGLE ─────────────────────────────────────────────────────────────────
+function toggleItem(id){
+  var newVal = ticks[id]===1 ? 0 : 1;
+  ticks[id] = newVal;
+  render();
+  syncToSheet(id, newVal);
+}
+
+// ─── MIDNIGHT RESET ─────────────────────────────────────────────────────────
+function checkReset(){
+  var today = todayStr();
+  if(todayKey !== today){
+    todayKey = today;
+    ticks = {};
+    render();
+  }
+}
+setInterval(checkReset, 60000); // check every minute
+
+// ─── GOOGLE SHEETS SYNC ─────────────────────────────────────────────────────
+// Uses Google Sheets API v4 with JWT auth (service account)
+
+var accessToken = null;
+var tokenExpiry = 0;
+
+function base64url(str){
+  return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function base64urlFromUint8(bytes){
+  var bin='';
+  bytes.forEach(function(b){ bin+=String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+async function getAccessToken(){
+  if(accessToken && Date.now() < tokenExpiry - 30000) return accessToken;
+
+  var now = Math.floor(Date.now()/1000);
+  var header = {alg:'RS256',typ:'JWT'};
+  var claim = {
+    iss: CFG.email,
+    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now+3600,
+    iat: now
+  };
+
+  var headerB64 = base64url(JSON.stringify(header));
+  var claimB64  = base64url(JSON.stringify(claim));
+  var sigInput  = headerB64+'.'+claimB64;
+
+  // Import private key and sign
+  // Handle both literal \n characters and real newlines from JSON paste
+  var rawKey = CFG.privateKey.replace(/\\n/g, '\n');
+  var pemKey = rawKey
+    .replace(/-----BEGIN RSA PRIVATE KEY-----/g,'')
+    .replace(/-----END RSA PRIVATE KEY-----/g,'')
+    .replace(/-----BEGIN PRIVATE KEY-----/g,'')
+    .replace(/-----END PRIVATE KEY-----/g,'')
+    .replace(/\s+/g,'');
+
+  var keyBytes = Uint8Array.from(atob(pemKey), function(c){ return c.charCodeAt(0); });
+  var cryptoKey = await crypto.subtle.importKey(
+    'pkcs8', keyBytes.buffer,
+    {name:'RSASSA-PKCS1-v1_5', hash:'SHA-256'},
+    false, ['sign']
+  );
+
+  var sigBytes = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5', cryptoKey,
+    new TextEncoder().encode(sigInput)
+  );
+
+  var jwt = sigInput+'.'+base64urlFromUint8(new Uint8Array(sigBytes));
+
+  var resp = await fetch('https://oauth2.googleapis.com/token', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion='+encodeURIComponent(jwt)
+  });
+  var data = await resp.json();
+  if(data.access_token){
+    accessToken = data.access_token;
+    tokenExpiry = Date.now() + (data.expires_in * 1000);
+    return accessToken;
+  }
+  throw new Error('Token error: '+JSON.stringify(data));
+}
+
+async function syncToSheet(itemId, value){
+  setSyncStatus('syncing','Saving...');
+  try {
+    var token = await getAccessToken();
+    var now = new Date();
+    var dayType = isSunday() ? 'Sunday' : 'Weekday';
+    var allItems = currentItems();
+    var item = allItems.find(function(i){ return i.id===itemId; });
+    var itemTitle = item ? item.title : itemId;
+    var timeStr = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    var dateStr = todayStr();
+
+    // Append row to Sheet1 (raw log)
+    var row = [dateStr, dayType, itemId, itemTitle, value, timeStr];
+    var body = {values:[row]};
+
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+CFG.sheetId+'/values/Log!A:F:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
+      {
+        method:'POST',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      }
+    );
+
+    if(!resp.ok) throw new Error('Sheet append failed: '+resp.status);
+
+    // Update daily summary
+    await updateDailySummary(token, dateStr, dayType);
+
+    setSyncStatus('ok','Saved · '+timeStr);
+  } catch(e){
+    setSyncStatus('error','Sync failed — check connection');
+    console.error(e);
+  }
+}
+
+async function updateDailySummary(token, dateStr, dayType){
+  // Read Summary sheet to find today's row or append new
+  var readResp = await fetch(
+    'https://sheets.googleapis.com/v4/spreadsheets/'+CFG.sheetId+'/values/Summary!A:G',
+    {headers:{'Authorization':'Bearer '+token}}
+  );
+  var readData = await readResp.json();
+  var rows = readData.values || [];
+
+  var done = doneCount();
+  var total = totalItems();
+  var pct = total ? Math.round(done/total*100) : 0;
+  var wk = weekNum();
+  var ds = daysSinceStart();
+
+  // Find if today's row exists
+  var rowIdx = -1;
+  for(var i=1;i<rows.length;i++){
+    if(rows[i][0]===dateStr){ rowIdx=i+1; break; } // +1 for 1-indexed sheets
+  }
+
+  var rowData = [dateStr, dayType, done, total, pct+'%', wk, ds];
+
+  if(rowIdx > 0){
+    // Update existing row
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+CFG.sheetId+'/values/Summary!A'+rowIdx+':G'+rowIdx+'?valueInputOption=USER_ENTERED',
+      {
+        method:'PUT',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body: JSON.stringify({values:[rowData]})
+      }
+    );
+  } else {
+    // Append new row
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+CFG.sheetId+'/values/Summary!A:G:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
+      {
+        method:'POST',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body: JSON.stringify({values:[rowData]})
+      }
+    );
+  }
+}
+
+async function loadStreak(){
+  if(!CFG.sheetId) return;
+  try {
+    var token = await getAccessToken();
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+CFG.sheetId+'/values/Summary!A:E',
+      {headers:{'Authorization':'Bearer '+token}}
+    );
+    var data = await resp.json();
+    var rows = (data.values||[]).slice(1); // skip header
+    // Count consecutive days from today backwards where pct >= 50
+    var streakCount = 0;
+    var checkDate = new Date(); checkDate.setHours(0,0,0,0);
+    var rowMap = {};
+    rows.forEach(function(r){ if(r[0]) rowMap[r[0]] = parseInt(r[4])||0; });
+    for(var i=0;i<365;i++){
+      var key = checkDate.getFullYear()+'-'+String(checkDate.getMonth()+1).padStart(2,'0')+'-'+String(checkDate.getDate()).padStart(2,'0');
+      if(rowMap[key] >= 50) streakCount++;
+      else break;
+      checkDate.setDate(checkDate.getDate()-1);
+    }
+    streak = streakCount;
+    render();
+  } catch(e){ console.log('Streak load error',e); }
+}
+
+// ─── SETUP / CONFIG ─────────────────────────────────────────────────────────
+function loadConfig(){
+  var raw = document.getElementById('embedded-config');
+  if(raw && raw.value){
+    try{ CFG = JSON.parse(raw.value); }catch(e){}
+  }
+}
+
+function saveConfig(){
+  var sheetId = document.getElementById('inp-sheet').value.trim();
+  var email   = document.getElementById('inp-email').value.trim();
+  var key     = document.getElementById('inp-key').value.trim();
+  if(!sheetId||!email||!key){ showToast('Please fill all three fields'); return; }
+  CFG = {sheetId:sheetId, email:email, privateKey:key};
+
+  // Inject into the HTML file itself (for future opens)
+  document.getElementById('embedded-config').value = JSON.stringify(CFG);
+  initSheetHeaders();
+  startApp();
+}
+
+async function initSheetHeaders(){
+  try {
+    var token = await getAccessToken();
+    // Set headers on Log sheet
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+CFG.sheetId+'/values/Log!A1:F1?valueInputOption=USER_ENTERED',
+      {
+        method:'PUT',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body: JSON.stringify({values:[['Date','Day Type','Item ID','Item Name','Value (1=done, 0=undone)','Time']]})
+      }
+    );
+    // Set headers on Summary sheet
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+CFG.sheetId+'/values/Summary!A1:G1?valueInputOption=USER_ENTERED',
+      {
+        method:'PUT',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body: JSON.stringify({values:[['Date','Day Type','Done','Total','Pct','Week','Day #']]})
+      }
+    );
+    showToast('Connected to Google Sheets');
+  } catch(e){
+    showToast('Sheet setup failed — check your credentials');
+    console.error(e);
+  }
+}
+
+function startApp(){
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('main-screen').style.display='block';
+  todayKey = todayStr();
+  render();
+  loadStreak();
+  setSyncStatus('ok','Connected to Google Sheets');
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+window.onload = function(){
+  loadConfig();
+  if(CFG.sheetId && CFG.email && CFG.privateKey){
+    startApp();
+  } else {
+    document.getElementById('setup-screen').style.display='block';
+  }
+};
+</script>
+
+<!-- Config storage — filled after setup, persists in the file -->
+<textarea id="embedded-config" style="display:none"></textarea>
+
+</body>
+</html>
